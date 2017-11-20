@@ -131,10 +131,10 @@ class AwsClient(BaseClient):
         return None
 
 
-    def _create_snapshot(self, volume_id):
+    def _create_snapshot(self, volume_id, tags):
         log_prefix = '[SNAPSHOT] [CREATE]'
         snapshot = None
-        self.logger.info('{} START for volume id {}'.format(log_prefix, volume_id))
+        self.logger.info('{} START for volume id {} with tags {}'.format(log_prefix, volume_id, tags))
         try:
             snapshot = self.ec2.create_snapshot(
                 VolumeId=volume_id,
@@ -148,9 +148,17 @@ class AwsClient(BaseClient):
 
             snapshot = Snapshot(snapshot.id, snapshot.volume_size, snapshot.state)
             self._add_snapshot(snapshot.id)
-            self.logger.info('{} SUCCESS: snapshot-id={}, volume-id={}'.format(log_prefix, snapshot.id, volume_id))
+
+            self.ec2.create_tags(
+                Resources=[
+                    snapshot.id
+                ],
+                Tags=tags
+            )
+
+            self.logger.info('{} SUCCESS: snapshot-id={}, volume-id={} with tags {}'.format(log_prefix, snapshot.id, volume_id, tags))
         except Exception as error:
-            message = '{} ERROR: volume-id={}\n{}'.format(log_prefix, volume_id, error)
+            message = '{} ERROR: volume-id={} and tags={}\n{}'.format(log_prefix, volume_id, tags, error)
             self.logger.error(message)
             if snapshot:
                 self.delete_snapshot(snapshot.id)
@@ -159,7 +167,7 @@ class AwsClient(BaseClient):
 
         return snapshot
 
-    def _copy_snapshot(self, snapshot_id):
+    def _copy_snapshot(self, snapshot_id, tags):
         log_prefix = '[SNAPSHOT] [COPY]'
         snapshot = None
         ec2_snapshot = self.ec2.Snapshot(snapshot_id)
@@ -180,6 +188,14 @@ class AwsClient(BaseClient):
             snapshot = Snapshot(new_snapshot.id, new_snapshot.volume_size, new_snapshot.state)
             self.logger.info('{} SUCCESS: snapshot-id={}, unencrypted-snapshot_id={}'.format(log_prefix, snapshot.id, snapshot_id))
             self.output_json['snapshotId'] = snapshot.id
+
+            self.ec2.create_tags(
+                Resources=[
+                    snapshot.id
+                ],
+                Tags=tags
+            )
+
         except Exception as error:
             message = '{} ERROR: snapshot-id={}\n{}'.format(log_prefix, snapshot_id, error)
             self.logger.error(message)

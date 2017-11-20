@@ -689,13 +689,14 @@ class BaseClient:
         """Create a snapshot of a volume.
 
         :param volume_id: the id of the volume the snapshot should be created from
+        :param tags: array of strings which can be used to tag the snapshot
         :returns: the snapshot (in case of success) or None (in case of errors)
         :rtype: Snapshot object
 
         :Example:
             ::
 
-                iaas_client.create_snapshot('948fb2e4-6e7f-11e6-8b77-86f30ca893d3')
+                iaas_client.create_snapshot('948fb2e4-6e7f-11e6-8b77-86f30ca893d3',[{'Key': 'instance_id' , 'Value':'948fb2e4-6e7f-11e6-8b77-86f30ca893d3'},{'Key':'service_name' , 'Value':'blueprint'}])
         """
         return self.__retry(self._create_snapshot, args)
 
